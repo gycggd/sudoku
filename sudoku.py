@@ -170,6 +170,8 @@ os.mkdir(path_number)
 os.mkdir(path_resized_number)
 
 for f in os.listdir(path_all_numbers):
+    if f.startswith('.'):
+        continue
     img_pil = Image.open(os.path.join(path_all_numbers, f))
     img_origin = np.array(img_pil)
     img = img_origin.copy()
@@ -237,6 +239,8 @@ else:
 board_gray = cv2.GaussianBlur(board_gray, (5, 5), 0)
 board_thresh = cv2.adaptiveThreshold(board_gray, 255, 1, 1, 5, 2)
 cv2.imshow('board_thresh', board_thresh)
+cv2.imwrite('./thresh.png', board_thresh)
+cv2.waitKey(0)
 
 _, contours, hierarchy = cv2.findContours(board_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -266,7 +270,7 @@ for i in range(9):
 
 cv2.drawContours(board_origin, [max_contour], 0, (0, 255, 0), 3)
 
-boxes = []
+number_contours = []
 
 candidates = []
 for i in range(len(hierarchy[0])):
@@ -285,11 +289,13 @@ while len(candidates) > 0:
     elif (rect[3] > max_rect[2] / 20 or rect[3] > max_rect[3] / 18) and \
             (rect[3] < max_rect[2] / 9 or rect[3] < max_rect[3] / 9):
         cv2.drawContours(board_origin, contours, c, (0, 0, 255), 3)
-        boxes.append(contours[c])
+        cv2.rectangle(board_origin, (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (255, 0, 0), 2)
+        number_contours.append(contours[c])
 
-print '# of grid already filled: ' + str(len(boxes))
-cv2.imshow("img", board_origin)
-cv2.waitKey(5000)
+print '# of grid already filled: ' + str(len(number_contours))
+cv2.imshow("extracted_contours", board_origin)
+cv2.imwrite('./extracted_contours.png', board_origin)
+cv2.waitKey(0)
 
 box_w = max_rect[2] / 9
 box_h = max_rect[3] / 9
@@ -298,10 +304,10 @@ box_h = max_rect[3] / 9
 sudoku = np.zeros((9, 9), np.int32)
 prefilled = []
 
-for box in boxes:
-    x, y, w, h = cv2.boundingRect(box)
-    cv2.rectangle(board_origin, (x - 1, y - 1), (x + w + 1, y + h + 1), (0, 0, 255), 2)
-    cv2.drawContours(board_origin, [box], 0, (0, 255, 0), 1)
+for number_contour in number_contours:
+    x, y, w, h = cv2.boundingRect(number_contour)
+    # cv2.rectangle(board_origin, (x - 1, y - 1), (x + w + 1, y + h + 1), (0, 0, 255), 2)
+    # cv2.drawContours(board_origin, [number_contour], 0, (0, 255, 0), 1)
 
     number_img = board_gray[y:y + h, x:x + w]
     number_resized = cv2.resize(number_img, (20, 40))
@@ -319,6 +325,9 @@ for box in boxes:
     sudoku[int((y - max_rect[1]) / box_h)][int((x - max_rect[0]) / box_w)] = number
     prefilled.append((int((y - max_rect[1]) / box_h), int((x - max_rect[0]) / box_w)))
 
+cv2.imshow("numbers_marked", board_origin)
+cv2.imwrite('./numbers_marked.png', board_origin)
+cv2.waitKey(0)
 sudoku_str = ''
 
 for i in range(9):
