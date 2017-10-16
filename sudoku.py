@@ -291,7 +291,6 @@ print '# of grid already filled: ' + str(len(boxes))
 cv2.imshow("img", board_origin)
 cv2.waitKey(5000)
 
-height, width = board_gray.shape[:2]
 box_w = max_rect[2] / 9
 box_h = max_rect[3] / 9
 
